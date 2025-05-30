@@ -44,13 +44,17 @@ public class GlobalChatCommand implements CommandExecutor {
         }
 
         // Se houver argumentos, envia a mensagem no chat global
-        StringBuilder message = new StringBuilder();
+        StringBuilder messageBuilder = new StringBuilder();
         for (String arg : args) {
-            message.append(arg).append(" ");
+            messageBuilder.append(arg).append(" ");
         }
-
-        // Simula o envio de uma mensagem de chat
-        player.chat(message.toString().trim());
+        String message = messageBuilder.toString().trim();
+        
+        // Enviar diretamente para todos os jogadores online usando o modo GLOBAL
+        String senderLanguage = plugin.getPlayerLanguage(player);
+        
+        // Processar a mensagem global para todos os jogadores online
+        plugin.processGlobalMessage(player, message, senderLanguage);
         
         return true;
     }

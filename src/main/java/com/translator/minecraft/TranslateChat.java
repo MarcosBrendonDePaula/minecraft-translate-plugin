@@ -6,13 +6,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.translator.minecraft.chat.ChatManager;
+import com.translator.minecraft.chat.ChatMode;
 import com.translator.minecraft.chat.commands.GlobalChatCommand;
 import com.translator.minecraft.chat.commands.LocalChatCommand;
 import com.translator.minecraft.chat.commands.PrivateMessageCommand;
@@ -139,6 +142,45 @@ public class TranslateChat extends JavaPlugin {
      */
     public String getPlayerLanguage(Player player) {
         return playerLanguages.getOrDefault(player.getUniqueId(), getConfig().getString("default-language", "en"));
+    }
+    
+    /**
+     * Processa e envia uma mensagem global para todos os jogadores online
+     * @param sender Jogador que enviou a mensagem
+     * @param message Mensagem a ser enviada
+     * @param senderLanguage Idioma do remetente
+     */
+    public void processGlobalMessage(Player sender, String message, String senderLanguage) {
+        // Enviar para todos os jogadores online, sem verificar distância ou mundo
+        for (Player recipient : Bukkit.getOnlinePlayers()) {
+            // Obter o idioma do destinatário
+            String recipientLanguage = getPlayerLanguage(recipient);
+            
+            // Traduzir a mensagem do idioma do remetente para o idioma do destinatário
+            CompletableFuture<String> translationFuture = translationAPI
+                    .translate(message, senderLanguage, recipientLanguage);
+            
+            // Processar a tradução quando estiver pronta
+            translationFuture.thenAccept(translatedMessage -> {
+                // Construir o formato da mensagem
+                String prefix = ChatMode.GLOBAL.getPrefix().replace("&", "§");
+                String formattedMessage;
+                
+                // Se os idiomas forem diferentes, mostrar o idioma original
+                if (!senderLanguage.equalsIgnoreCase(recipientLanguage)) {
+                    formattedMessage = prefix + " §7[" + senderLanguage.toUpperCase() + "] §f" + 
+                            sender.getDisplayName() + "§7: §f" + translatedMessage;
+                } else {
+                    formattedMessage = prefix + " §f" + sender.getDisplayName() + "§7: §f" + translatedMessage;
+                }
+                
+                // Enviar a mensagem traduzida para o destinatário
+                recipient.sendMessage(formattedMessage);
+            });
+        }
+        
+        // Log da mensagem no console
+        getLogger().info("[CHAT] [GLOBAL] " + sender.getName() + ": " + message);
     }
     
     /**
