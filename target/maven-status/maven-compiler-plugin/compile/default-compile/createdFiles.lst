@@ -1,7 +1,14 @@
-com/translator/minecraft/TranslationAPI$CacheEntry.class
 com/translator/minecraft/ChatListener.class
 com/translator/minecraft/TranslateChat.class
+com/translator/minecraft/chat/commands/LocalChatCommand.class
 com/translator/minecraft/LanguageCommand.class
-com/translator/minecraft/TranslationAPI.class
+com/translator/minecraft/chat/ChatMode.class
+com/translator/minecraft/chat/commands/ReplyCommand.class
 com/translator/minecraft/LanguagesCommand.class
+com/translator/minecraft/chat/commands/GlobalChatCommand.class
+com/translator/minecraft/TranslationAPI$CacheEntry.class
+com/translator/minecraft/chat/ChatManager.class
+com/translator/minecraft/chat/commands/PrivateMessageCommand.class
+com/translator/minecraft/TranslationAPI.class
+com/translator/minecraft/chat/commands/SystemMessageCommand.class
 com/translator/minecraft/LanguageSelectionGUI.class

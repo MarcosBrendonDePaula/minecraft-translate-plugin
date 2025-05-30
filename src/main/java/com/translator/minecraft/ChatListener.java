@@ -1,14 +1,17 @@
 package com.translator.minecraft;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import com.translator.minecraft.chat.ChatMode;
+
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class ChatListener implements Listener {
@@ -21,47 +24,92 @@ public class ChatListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerChat(AsyncPlayerChatEvent event) {
-        // Cancelar o evento original para controlar a exibição das mensagens
+        Player sender = event.getPlayer();
+        String message = event.getMessage();
+        
+        // Cancelar o evento para gerenciar manualmente a distribuição da mensagem
         event.setCancelled(true);
         
-        Player sender = event.getPlayer();
-        String originalMessage = event.getMessage();
+        // Determinar o modo de chat a ser usado
+        ChatMode chatMode = determineChatMode(sender, message);
         
-        // Obter o idioma do remetente (idioma em que a mensagem foi escrita)
-        String sourceLanguage = plugin.getPlayerLanguage(sender);
+        // Obter o idioma do remetente
+        String senderLanguage = plugin.getPlayerLanguage(sender);
         
-        // Para cada jogador online, traduzir a mensagem para seu idioma preferido
-        for (Player recipient : plugin.getServer().getOnlinePlayers()) {
-            // Obter o idioma do destinatário
-            String targetLanguage = plugin.getPlayerLanguage(recipient);
-            
-            // Se os idiomas forem iguais, não precisa traduzir
-            if (sourceLanguage.equalsIgnoreCase(targetLanguage)) {
-                // Formato da mensagem: [Jogador] Mensagem original (Idioma: xx)
-                String formattedMessage = String.format("§7[%s] §f%s §7(Idioma: %s)", 
-                    sender.getDisplayName(), originalMessage, sourceLanguage);
-                
-                recipient.sendMessage(formattedMessage);
-            } else {
-                // Traduzir a mensagem do idioma do remetente para o idioma do destinatário
-                plugin.getTranslationAPI().translate(originalMessage, sourceLanguage, targetLanguage)
-                    .thenAccept(translatedText -> {
-                        // Formato da mensagem: [Jogador] Mensagem traduzida (Idioma original: xx)
-                        String formattedMessage = String.format("§7[%s] §f%s §7(Idioma original: %s)", 
-                            sender.getDisplayName(), translatedText, sourceLanguage);
-                        
-                        recipient.sendMessage(formattedMessage);
-                    })
-                    .exceptionally(ex -> {
-                        // Em caso de erro na tradução, enviar a mensagem original
-                        String formattedMessage = String.format("§7[%s] §f%s §7(Idioma original: %s - falha na tradução)", 
-                            sender.getDisplayName(), originalMessage, sourceLanguage);
-                        
-                        recipient.sendMessage(formattedMessage);
-                        plugin.getLogger().warning("Erro ao traduzir mensagem: " + ex.getMessage());
-                        return null;
-                    });
+        // Conjunto de jogadores que já receberam a mensagem
+        Set<Player> informedPlayers = new HashSet<>();
+        
+        // Para cada jogador online
+        for (Player recipient : Bukkit.getOnlinePlayers()) {
+            // Verificar se o jogador está no alcance do modo de chat
+            if (!chatMode.isInRange(sender, recipient)) {
+                continue;
             }
+            
+            // Obter o idioma do destinatário
+            String recipientLanguage = plugin.getPlayerLanguage(recipient);
+            
+            // Traduzir a mensagem do idioma do remetente para o idioma do destinatário
+            CompletableFuture<String> translationFuture = plugin.getTranslationAPI()
+                    .translate(message, senderLanguage, recipientLanguage);
+            
+            // Processar a tradução quando estiver pronta
+            translationFuture.thenAccept(translatedMessage -> {
+                // Construir o formato da mensagem
+                String prefix = chatMode.getPrefix().replace("&", "§");
+                String formattedMessage;
+                
+                // Se os idiomas forem diferentes, mostrar o idioma original
+                if (!senderLanguage.equalsIgnoreCase(recipientLanguage)) {
+                    formattedMessage = prefix + " §7[" + senderLanguage.toUpperCase() + "] §f" + 
+                            sender.getDisplayName() + "§7: §f" + translatedMessage;
+                } else {
+                    formattedMessage = prefix + " §f" + sender.getDisplayName() + "§7: §f" + translatedMessage;
+                }
+                
+                // Enviar a mensagem traduzida para o destinatário
+                recipient.sendMessage(formattedMessage);
+                
+                // Adicionar o jogador à lista de informados
+                informedPlayers.add(recipient);
+            });
         }
+        
+        // Log da mensagem no console
+        plugin.getLogger().info("[CHAT] [" + chatMode.getName().toUpperCase() + "] " + 
+                sender.getName() + ": " + message);
+    }
+    
+    /**
+     * Determina o modo de chat a ser usado com base no jogador e na mensagem
+     * @param player Jogador que enviou a mensagem
+     * @param message Mensagem enviada
+     * @return Modo de chat a ser usado
+     */
+    private ChatMode determineChatMode(Player player, String message) {
+        // Verificar se o jogador tem um modo de chat travado
+        if (plugin.getChatManager().isPlayerChatLocked(player)) {
+            // Usar o modo de chat atual do jogador
+            return plugin.getChatManager().getPlayerChatMode(player);
+        }
+        
+        // Se a mensagem começar com /g, usar chat global
+        if (message.startsWith("/g ")) {
+            return ChatMode.GLOBAL;
+        }
+        
+        // Se a mensagem começar com /l, usar chat local
+        if (message.startsWith("/l ")) {
+            return ChatMode.LOCAL;
+        }
+        
+        // Caso contrário, usar o modo padrão (GLOBAL)
+        return ChatMode.GLOBAL;
+    }
+    
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        // Limpar dados do jogador quando ele sair
+        plugin.getChatManager().clearPlayerData(event.getPlayer());
     }
 }

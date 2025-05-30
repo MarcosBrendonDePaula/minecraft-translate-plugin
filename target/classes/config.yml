@@ -1,41 +1,27 @@
-# default config.yml for TranslateChat plugin
-# Lista de idiomas disponíveis para tradução
-available-languages:
-  - "pt-br"
-  - "en"
-  - "es"
-  - "fr"
-  - "de"
-  - "it"
-  - "ja"
-  - "ko"
-  - "ru"
-  - "zh-cn"
+# default config.yml for TranslateChat
+# Configurações do plugin de tradução de chat
 
-# Idioma padrão para novos jogadores
-default-language: "pt-br"
+# Idioma padrão para jogadores que não definiram um idioma
+default-language: en
+
+# Lista de idiomas disponíveis para seleção
+available-languages:
+  en: "English"
+  pt-br: "Português (Brasil)"
+  es: "Español"
+  fr: "Français"
+  de: "Deutsch"
+  it: "Italiano"
+  ja: "日本語"
+  ko: "한국어"
+  ru: "Русский"
+  zh-cn: "中文 (简体)"
 
 # Configurações da API de tradução
 translation-api:
   # Endpoint da API de tradução
   endpoint: "https://translate.marcosbrendon.com/translate"
 
-# Configurações de mensagem
-messages:
-  prefix: "&6[TranslateChat] &r"
-  language-changed: "&aIdioma alterado para: &f%language%"
-  language-not-available: "&cIdioma não disponível. Use /languages para ver os idiomas disponíveis."
-  current-language: "&eSeu idioma atual é: &f%language%"
-  
-# Configurações da interface de seleção de idioma
-language-selection:
-  # Título do inventário
-  title: "Selecione seu idioma"
-  # Número de linhas do inventário (1-6)
-  rows: 3
-  # Habilitar interface gráfica para seleção de idioma
-  enabled: true
-  
 # Configurações do cache de tradução
 translation-cache:
   # Tempo de expiração das entradas do cache em minutos
@@ -44,3 +30,18 @@ translation-cache:
   cleanup-interval-minutes: 10
   # Tamanho máximo do cache (0 = ilimitado)
   max-size: 1000
+
+# Configurações de chat
+chat:
+  # Raio do chat local em blocos (0 = desativado)
+  local-radius: 100
+  # Prefixo do chat global
+  global-prefix: "&6[G]&r"
+  # Prefixo do chat local
+  local-prefix: "&a[L]&r"
+  # Prefixo do chat do sistema
+  system-prefix: "&c[SISTEMA]&r"
+  # Prefixo de mensagem privada (enviada)
+  pm-sent-prefix: "&d[Você → %player%]&r"
+  # Prefixo de mensagem privada (recebida)
+  pm-received-prefix: "&d[%player% → Você]&r"

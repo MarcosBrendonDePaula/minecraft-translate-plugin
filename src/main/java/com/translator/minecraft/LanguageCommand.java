@@ -16,41 +16,39 @@ public class LanguageCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(plugin.getConfig().getString("messages.prefix") + 
-                "§cEste comando só pode ser executado por jogadores.");
+            sender.sendMessage("§cEste comando só pode ser executado por jogadores.");
             return true;
         }
 
         Player player = (Player) sender;
 
-        if (args.length < 1) {
+        // Se não houver argumentos, mostrar o idioma atual e abrir a GUI
+        if (args.length == 0) {
             String currentLanguage = plugin.getPlayerLanguage(player);
-            String message = plugin.getConfig().getString("messages.prefix") + 
-                plugin.getConfig().getString("messages.current-language").replace("%language%", currentLanguage);
-            player.sendMessage(message);
-            player.sendMessage(plugin.getConfig().getString("messages.prefix") + 
-                "§eUse /language <idioma> para alterar.");
+            player.sendMessage("§6Seu idioma atual: §e" + currentLanguage);
+            player.sendMessage("§7Use /language <idioma> para definir seu idioma ou selecione na GUI.");
             
-            // Abrir interface gráfica se estiver habilitada
-            if (plugin.getConfig().getBoolean("language-selection.enabled", true)) {
-                plugin.getLanguageSelectionGUI().openLanguageSelection(player);
-            }
-            
+            // Abrir a GUI de seleção de idioma
+            plugin.getLanguageSelectionGUI().openGUI(player);
             return true;
         }
 
+        // Se houver argumentos, definir o idioma
         String language = args[0].toLowerCase();
 
+        // Verificar se o idioma está disponível
         if (!plugin.isLanguageAvailable(language)) {
-            player.sendMessage(plugin.getConfig().getString("messages.prefix") + 
-                plugin.getConfig().getString("messages.language-not-available"));
+            player.sendMessage("§cIdioma não disponível: " + language);
+            player.sendMessage("§7Use /languages para ver os idiomas disponíveis.");
             return true;
         }
 
+        // Definir o idioma do jogador
         plugin.setPlayerLanguage(player, language);
-        String message = plugin.getConfig().getString("messages.prefix") + 
-            plugin.getConfig().getString("messages.language-changed").replace("%language%", language);
-        player.sendMessage(message);
+
+        // Informar o jogador
+        player.sendMessage("§aIdioma definido para: §e" + language);
+
         return true;
     }
 }

@@ -1,5 +1,9 @@
 package com.translator.minecraft;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -15,19 +19,20 @@ public class LanguagesCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        StringBuilder message = new StringBuilder("§6[TranslateChat] §eIdiomas disponíveis:\n");
+        sender.sendMessage("§6=== Idiomas Disponíveis ===");
         
-        for (String language : plugin.getAvailableLanguages()) {
-            message.append("§f- ").append(language).append("\n");
+        Map<String, String> languages = plugin.getAvailableLanguages();
+        for (Map.Entry<String, String> entry : languages.entrySet()) {
+            sender.sendMessage("§e" + entry.getKey() + " §7- §f" + entry.getValue());
         }
-        
-        sender.sendMessage(message.toString());
         
         if (sender instanceof Player) {
             Player player = (Player) sender;
             String currentLanguage = plugin.getPlayerLanguage(player);
-            sender.sendMessage("§6[TranslateChat] §eSeu idioma atual é: §f" + currentLanguage);
+            sender.sendMessage("§6Seu idioma atual: §e" + currentLanguage);
         }
+        
+        sender.sendMessage("§7Use /language <idioma> para definir seu idioma.");
         
         return true;
     }

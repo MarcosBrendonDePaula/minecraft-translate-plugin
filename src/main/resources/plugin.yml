@@ -2,13 +2,38 @@ name: TranslateChat
 version: 1.0
 main: com.translator.minecraft.TranslateChat
 api-version: 1.20
-description: Plugin que traduz mensagens do chat para o idioma escolhido pelo jogador
+description: Plugin de tradução de chat com modos de chat global, local e mensagens privadas
 commands:
   language:
-    description: Seleciona o idioma para tradução das mensagens
-    usage: /language <idioma>
-    aliases: [lang, idioma]
+    description: Define seu idioma preferido
+    usage: /language [idioma]
+    aliases: [lang]
   languages:
-    description: Mostra os idiomas disponíveis para tradução
+    description: Lista os idiomas disponíveis
     usage: /languages
-    aliases: [langs, idiomas]
+    aliases: [langs]
+  g:
+    description: Envia uma mensagem no chat global ou trava o modo de chat em global
+    usage: /g [mensagem]
+    aliases: [global]
+  l:
+    description: Envia uma mensagem no chat local ou trava o modo de chat em local
+    usage: /l [mensagem]
+    aliases: [local]
+  msg:
+    description: Envia uma mensagem privada para outro jogador
+    usage: /msg <jogador> <mensagem>
+    aliases: [tell, w, whisper]
+  r:
+    description: Responde à última mensagem privada recebida
+    usage: /r <mensagem>
+    aliases: [reply]
+  broadcast:
+    description: Envia uma mensagem do sistema para todos os jogadores
+    usage: /broadcast <mensagem>
+    aliases: [bc, announce]
+    permission: translatechat.system
+permissions:
+  translatechat.system:
+    description: Permite enviar mensagens do sistema
+    default: op

@@ -1,68 +1,86 @@
 package com.translator.minecraft;
 
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class TranslateChat extends JavaPlugin implements Listener {
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import com.translator.minecraft.chat.ChatManager;
+import com.translator.minecraft.chat.commands.GlobalChatCommand;
+import com.translator.minecraft.chat.commands.LocalChatCommand;
+import com.translator.minecraft.chat.commands.PrivateMessageCommand;
+import com.translator.minecraft.chat.commands.ReplyCommand;
+import com.translator.minecraft.chat.commands.SystemMessageCommand;
+
+public class TranslateChat extends JavaPlugin {
 
     private Map<UUID, String> playerLanguages;
     private File languagesFile;
     private FileConfiguration languagesConfig;
     private TranslationAPI translationAPI;
+    private ChatManager chatManager;
     private LanguageSelectionGUI languageSelectionGUI;
 
     @Override
     public void onEnable() {
-        // Salvar configuração padrão se não existir
+        // Salvar configuração padrão
         saveDefaultConfig();
         
         // Inicializar mapa de idiomas dos jogadores
         playerLanguages = new HashMap<>();
         
+        // Carregar idiomas dos jogadores
+        loadLanguages();
+        
         // Inicializar API de tradução
         translationAPI = new TranslationAPI(this);
         
-        // Carregar idiomas dos jogadores
-        loadPlayerLanguages();
+        // Inicializar gerenciador de chat
+        chatManager = new ChatManager();
         
-        // Inicializar interface gráfica
+        // Inicializar GUI de seleção de idioma
         languageSelectionGUI = new LanguageSelectionGUI(this);
         
         // Registrar eventos
-        getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+        getServer().getPluginManager().registerEvents(languageSelectionGUI, this);
         
         // Registrar comandos
         getCommand("language").setExecutor(new LanguageCommand(this));
         getCommand("languages").setExecutor(new LanguagesCommand(this));
         
-        getLogger().info("TranslateChat ativado com sucesso!");
+        // Registrar novos comandos de chat
+        getCommand("g").setExecutor(new GlobalChatCommand(this));
+        getCommand("l").setExecutor(new LocalChatCommand(this));
+        getCommand("msg").setExecutor(new PrivateMessageCommand(this));
+        getCommand("r").setExecutor(new ReplyCommand(this));
+        getCommand("broadcast").setExecutor(new SystemMessageCommand(this));
+        
+        getLogger().info("Plugin TranslateChat ativado com sucesso!");
     }
 
     @Override
     public void onDisable() {
         // Salvar idiomas dos jogadores
-        savePlayerLanguages();
+        saveLanguages();
         
-        getLogger().info("TranslateChat desativado com sucesso!");
+        // Limpar cache de tradução
+        translationAPI.clearCache();
+        
+        getLogger().info("Plugin TranslateChat desativado com sucesso!");
     }
     
     /**
-     * Carrega os idiomas dos jogadores do arquivo de configuração
+     * Carrega os idiomas dos jogadores do arquivo
      */
-    private void loadPlayerLanguages() {
+    private void loadLanguages() {
         languagesFile = new File(getDataFolder(), "languages.yml");
         
         if (!languagesFile.exists()) {
@@ -76,7 +94,6 @@ public class TranslateChat extends JavaPlugin implements Listener {
         
         languagesConfig = YamlConfiguration.loadConfiguration(languagesFile);
         
-        // Carregar idiomas dos jogadores
         if (languagesConfig.contains("players")) {
             for (String uuidString : languagesConfig.getConfigurationSection("players").getKeys(false)) {
                 UUID uuid = UUID.fromString(uuidString);
@@ -87,14 +104,13 @@ public class TranslateChat extends JavaPlugin implements Listener {
     }
     
     /**
-     * Salva os idiomas dos jogadores no arquivo de configuração
+     * Salva os idiomas dos jogadores no arquivo
      */
-    public void savePlayerLanguages() {
+    public void saveLanguages() {
         if (languagesConfig == null || languagesFile == null) {
             return;
         }
         
-        // Salvar idiomas dos jogadores
         for (Map.Entry<UUID, String> entry : playerLanguages.entrySet()) {
             languagesConfig.set("players." + entry.getKey().toString(), entry.getValue());
         }
@@ -109,37 +125,20 @@ public class TranslateChat extends JavaPlugin implements Listener {
     /**
      * Define o idioma de um jogador
      * @param player Jogador
-     * @param language Código do idioma
+     * @param language Idioma
      */
     public void setPlayerLanguage(Player player, String language) {
         playerLanguages.put(player.getUniqueId(), language);
-        savePlayerLanguages();
+        saveLanguages();
     }
     
     /**
      * Obtém o idioma de um jogador
      * @param player Jogador
-     * @return Código do idioma ou idioma padrão se não definido
+     * @return Idioma do jogador ou idioma padrão se não estiver definido
      */
     public String getPlayerLanguage(Player player) {
-        return playerLanguages.getOrDefault(player.getUniqueId(), getConfig().getString("default-language", "pt-br"));
-    }
-    
-    /**
-     * Verifica se um idioma está disponível
-     * @param language Código do idioma
-     * @return true se o idioma estiver disponível
-     */
-    public boolean isLanguageAvailable(String language) {
-        return getConfig().getStringList("available-languages").contains(language);
-    }
-    
-    /**
-     * Obtém a lista de idiomas disponíveis
-     * @return Lista de idiomas disponíveis
-     */
-    public java.util.List<String> getAvailableLanguages() {
-        return getConfig().getStringList("available-languages");
+        return playerLanguages.getOrDefault(player.getUniqueId(), getConfig().getString("default-language", "en"));
     }
     
     /**
@@ -151,29 +150,44 @@ public class TranslateChat extends JavaPlugin implements Listener {
     }
     
     /**
-     * Obtém a interface gráfica de seleção de idioma
-     * @return Interface gráfica de seleção de idioma
+     * Obtém o gerenciador de chat
+     * @return Gerenciador de chat
+     */
+    public ChatManager getChatManager() {
+        return chatManager;
+    }
+    
+    /**
+     * Obtém a GUI de seleção de idioma
+     * @return GUI de seleção de idioma
      */
     public LanguageSelectionGUI getLanguageSelectionGUI() {
         return languageSelectionGUI;
     }
     
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+    /**
+     * Obtém os idiomas disponíveis
+     * @return Mapa de códigos de idioma para nomes de idioma
+     */
+    public Map<String, String> getAvailableLanguages() {
+        Map<String, String> languages = new LinkedHashMap<>();
         
-        // Se o jogador não tiver um idioma definido, mostrar menu de seleção
-        if (!playerLanguages.containsKey(player.getUniqueId())) {
-            // Agendar para mostrar o menu após 2 segundos (para garantir que o jogador já carregou completamente)
-            getServer().getScheduler().runTaskLater(this, () -> {
-                // Abrir interface de seleção de idioma
-                if (getConfig().getBoolean("language-selection.enabled", true)) {
-                    languageSelectionGUI.openLanguageSelection(player);
-                } else {
-                    player.sendMessage(getConfig().getString("messages.prefix") + 
-                        "§eBem-vindo! Use /language <idioma> para selecionar seu idioma.");
-                }
-            }, 40L); // 40 ticks = 2 segundos
+        if (getConfig().contains("available-languages")) {
+            for (String code : getConfig().getConfigurationSection("available-languages").getKeys(false)) {
+                String name = getConfig().getString("available-languages." + code);
+                languages.put(code, name);
+            }
         }
+        
+        return languages;
+    }
+    
+    /**
+     * Verifica se um idioma está disponível
+     * @param language Código do idioma
+     * @return true se o idioma estiver disponível
+     */
+    public boolean isLanguageAvailable(String language) {
+        return getAvailableLanguages().containsKey(language);
     }
 }

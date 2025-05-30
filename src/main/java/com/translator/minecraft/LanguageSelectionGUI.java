@@ -1,5 +1,9 @@
 package com.translator.minecraft;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -10,111 +14,98 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class LanguageSelectionGUI implements Listener {
 
     private final TranslateChat plugin;
-    private final Map<String, Material> languageIcons;
+    private final String inventoryTitle = "§6Selecione seu idioma";
 
     public LanguageSelectionGUI(TranslateChat plugin) {
         this.plugin = plugin;
-        this.languageIcons = new HashMap<>();
-        
-        // Configurar ícones para cada idioma
-        setupLanguageIcons();
-        
-        // Registrar eventos
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
-    
+
     /**
-     * Configura os ícones para cada idioma
+     * Abre a GUI de seleção de idioma para um jogador
+     * @param player Jogador para abrir a GUI
      */
-    private void setupLanguageIcons() {
-        // Ícones padrão para idiomas comuns
-        languageIcons.put("pt-br", Material.YELLOW_WOOL);
-        languageIcons.put("en", Material.RED_WOOL);
-        languageIcons.put("es", Material.ORANGE_WOOL);
-        languageIcons.put("fr", Material.BLUE_WOOL);
-        languageIcons.put("de", Material.BLACK_WOOL);
-        languageIcons.put("it", Material.GREEN_WOOL);
-        languageIcons.put("ja", Material.WHITE_WOOL);
-        languageIcons.put("ko", Material.LIGHT_BLUE_WOOL);
-        languageIcons.put("ru", Material.RED_WOOL);
-        languageIcons.put("zh-cn", Material.PINK_WOOL);
+    public void openGUI(Player player) {
+        // Obter a lista de idiomas disponíveis
+        Map<String, String> availableLanguages = plugin.getAvailableLanguages();
         
-        // Adicionar mais idiomas conforme necessário
-    }
-    
-    /**
-     * Abre a interface de seleção de idioma para um jogador
-     * @param player Jogador para abrir a interface
-     */
-    public void openLanguageSelection(Player player) {
-        // Verificar se a interface está habilitada
-        if (!plugin.getConfig().getBoolean("language-selection.enabled", true)) {
-            player.sendMessage(plugin.getConfig().getString("messages.prefix") + 
-                "§cInterface de seleção de idioma desabilitada. Use /language <idioma>.");
-            return;
-        }
+        // Calcular o tamanho do inventário (múltiplo de 9)
+        int size = (int) Math.ceil(availableLanguages.size() / 9.0) * 9;
+        size = Math.max(9, Math.min(54, size)); // Mínimo 9, máximo 54
         
-        // Obter configurações da interface
-        String title = plugin.getConfig().getString("language-selection.title", "Selecione seu idioma");
-        int rows = plugin.getConfig().getInt("language-selection.rows", 3);
+        // Criar o inventário
+        Inventory inventory = Bukkit.createInventory(null, size, inventoryTitle);
         
-        // Criar inventário
-        Inventory inventory = Bukkit.createInventory(null, rows * 9, title);
-        
-        // Adicionar itens para cada idioma disponível
-        List<String> availableLanguages = plugin.getAvailableLanguages();
-        String currentLanguage = plugin.getPlayerLanguage(player);
-        
-        for (int i = 0; i < availableLanguages.size() && i < inventory.getSize(); i++) {
-            String language = availableLanguages.get(i);
+        // Adicionar os itens de idioma
+        int slot = 0;
+        for (Map.Entry<String, String> entry : availableLanguages.entrySet()) {
+            String languageCode = entry.getKey();
+            String languageName = entry.getValue();
             
-            // Obter ícone para o idioma (ou usar um padrão)
-            Material icon = languageIcons.getOrDefault(language, Material.PAPER);
-            
-            // Criar item
-            ItemStack item = new ItemStack(icon);
-            ItemMeta meta = item.getItemMeta();
-            
-            // Definir nome e descrição
-            meta.setDisplayName("§f" + language);
-            
-            // Adicionar descrição
-            if (language.equals(currentLanguage)) {
-                meta.setLore(Arrays.asList("§aIdioma atual", "§7Clique para selecionar"));
-            } else {
-                meta.setLore(Arrays.asList("§7Clique para selecionar"));
-            }
-            
-            item.setItemMeta(meta);
+            // Criar o item
+            ItemStack item = createLanguageItem(languageCode, languageName, player);
             
             // Adicionar ao inventário
-            inventory.setItem(i, item);
+            inventory.setItem(slot++, item);
         }
         
-        // Abrir inventário para o jogador
+        // Abrir o inventário para o jogador
         player.openInventory(inventory);
+    }
+    
+    /**
+     * Cria um item para representar um idioma na GUI
+     * @param languageCode Código do idioma
+     * @param languageName Nome do idioma
+     * @param player Jogador para verificar o idioma atual
+     * @return ItemStack representando o idioma
+     */
+    private ItemStack createLanguageItem(String languageCode, String languageName, Player player) {
+        // Determinar o material do item
+        Material material = Material.PAPER;
+        
+        // Verificar se é o idioma atual do jogador
+        boolean isCurrentLanguage = plugin.getPlayerLanguage(player).equalsIgnoreCase(languageCode);
+        
+        if (isCurrentLanguage) {
+            material = Material.ENCHANTED_BOOK;
+        }
+        
+        // Criar o item
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        // Definir o nome e a descrição
+        meta.setDisplayName("§e" + languageName);
+        
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Código: §f" + languageCode);
+        
+        if (isCurrentLanguage) {
+            lore.add("§aIdioma atual");
+        } else {
+            lore.add("§7Clique para selecionar");
+        }
+        
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        
+        return item;
     }
     
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // Verificar se é o inventário de seleção de idioma
-        String title = plugin.getConfig().getString("language-selection.title", "Selecione seu idioma");
-        if (!event.getView().getTitle().equals(title)) {
+        // Verificar se o inventário é a GUI de seleção de idioma
+        if (!event.getView().getTitle().equals(inventoryTitle)) {
             return;
         }
         
         // Cancelar o evento para evitar que o jogador pegue o item
         event.setCancelled(true);
         
-        // Verificar se o clique foi em um item válido
+        // Verificar se o clique foi em um slot válido
         if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) {
             return;
         }
@@ -122,23 +113,35 @@ public class LanguageSelectionGUI implements Listener {
         // Obter o jogador
         Player player = (Player) event.getWhoClicked();
         
-        // Obter o idioma selecionado
-        String language = event.getCurrentItem().getItemMeta().getDisplayName().substring(2); // Remover o §f
+        // Obter o nome do item
+        String itemName = event.getCurrentItem().getItemMeta().getDisplayName();
         
-        // Verificar se o idioma é válido
-        if (!plugin.isLanguageAvailable(language)) {
-            player.sendMessage(plugin.getConfig().getString("messages.prefix") + 
-                plugin.getConfig().getString("messages.language-not-available"));
+        // Encontrar o código do idioma correspondente
+        String selectedLanguage = null;
+        
+        for (Map.Entry<String, String> entry : plugin.getAvailableLanguages().entrySet()) {
+            if (("§e" + entry.getValue()).equals(itemName)) {
+                selectedLanguage = entry.getKey();
+                break;
+            }
+        }
+        
+        // Verificar se o idioma foi encontrado
+        if (selectedLanguage == null) {
+            return;
+        }
+        
+        // Verificar se o idioma está disponível
+        if (!plugin.isLanguageAvailable(selectedLanguage)) {
+            player.sendMessage("§cIdioma não disponível: " + selectedLanguage);
             return;
         }
         
         // Definir o idioma do jogador
-        plugin.setPlayerLanguage(player, language);
+        plugin.setPlayerLanguage(player, selectedLanguage);
         
-        // Enviar mensagem de confirmação
-        String message = plugin.getConfig().getString("messages.prefix") + 
-            plugin.getConfig().getString("messages.language-changed").replace("%language%", language);
-        player.sendMessage(message);
+        // Informar o jogador
+        player.sendMessage("§aIdioma definido para: §e" + selectedLanguage);
         
         // Fechar o inventário
         player.closeInventory();
