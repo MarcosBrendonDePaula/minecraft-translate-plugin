@@ -1,0 +1,41 @@
+# default config.yml for TranslateChat plugin
+# Lista de idiomas disponíveis para tradução
+available-languages:
+  - "pt-br"
+  - "en"
+  - "es"
+  - "fr"
+  - "de"
+  - "it"
+  - "ja"
+  - "ko"
+  - "ru"
+  - "zh-cn"
+
+# Idioma padrão para novos jogadores
+default-language: "pt-br"
+
+# Configurações de mensagem
+messages:
+  prefix: "&6[TranslateChat] &r"
+  language-changed: "&aIdioma alterado para: &f%language%"
+  language-not-available: "&cIdioma não disponível. Use /languages para ver os idiomas disponíveis."
+  current-language: "&eSeu idioma atual é: &f%language%"
+  
+# Configurações da interface de seleção de idioma
+language-selection:
+  # Título do inventário
+  title: "Selecione seu idioma"
+  # Número de linhas do inventário (1-6)
+  rows: 3
+  # Habilitar interface gráfica para seleção de idioma
+  enabled: true
+  
+# Configurações do cache de tradução
+translation-cache:
+  # Tempo de expiração das entradas do cache em minutos
+  expiration-minutes: 30
+  # Intervalo de limpeza do cache em minutos
+  cleanup-interval-minutes: 10
+  # Tamanho máximo do cache (0 = ilimitado)
+  max-size: 1000

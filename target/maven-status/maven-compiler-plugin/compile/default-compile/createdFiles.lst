@@ -1,0 +1,7 @@
+com/translator/minecraft/TranslationAPI$CacheEntry.class
+com/translator/minecraft/ChatListener.class
+com/translator/minecraft/TranslateChat.class
+com/translator/minecraft/LanguageCommand.class
+com/translator/minecraft/TranslationAPI.class
+com/translator/minecraft/LanguagesCommand.class
+com/translator/minecraft/LanguageSelectionGUI.class
