@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class TranslationAPI {
 
     private final TranslateChat plugin;
-    private final String apiUrl = "https://translate.marcosbrendon.com/translate";
+    private final String apiUrl;
     private final JSONParser jsonParser = new JSONParser();
     
     // Cache para armazenar traduções recentes
@@ -29,6 +29,8 @@ public class TranslationAPI {
 
     public TranslationAPI(TranslateChat plugin) {
         this.plugin = plugin;
+        // Obter o endpoint da API do arquivo de configuração
+        this.apiUrl = plugin.getConfig().getString("translation-api.endpoint", "https://translate.marcosbrendon.com/translate");
         this.translationCache = new ConcurrentHashMap<>();
         
         // Obter tempo de expiração do cache da configuração ou usar valor padrão
@@ -36,6 +38,9 @@ public class TranslationAPI {
         
         // Agendar limpeza periódica do cache
         scheduleCacheCleanup();
+        
+        // Log do endpoint da API que está sendo usado
+        plugin.getLogger().info("Usando endpoint da API de tradução: " + apiUrl);
     }
     
     /**
@@ -151,6 +156,14 @@ public class TranslationAPI {
      */
     public int getCacheSize() {
         return translationCache.size();
+    }
+    
+    /**
+     * Obtém o endpoint da API que está sendo usado
+     * @return URL do endpoint da API
+     */
+    public String getApiUrl() {
+        return apiUrl;
     }
     
     /**

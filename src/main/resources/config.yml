@@ -15,6 +15,11 @@ available-languages:
 # Idioma padrão para novos jogadores
 default-language: "pt-br"
 
+# Configurações da API de tradução
+translation-api:
+  # Endpoint da API de tradução
+  endpoint: "https://translate.marcosbrendon.com/translate"
+
 # Configurações de mensagem
 messages:
   prefix: "&6[TranslateChat] &r"
