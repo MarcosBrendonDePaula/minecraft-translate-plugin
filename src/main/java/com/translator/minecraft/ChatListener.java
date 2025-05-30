@@ -36,6 +36,13 @@ public class ChatListener implements Listener {
         // Obter o idioma do remetente
         String senderLanguage = plugin.getPlayerLanguage(sender);
         
+        // Se for chat global, usar o método centralizado para garantir envio para todos
+        if (chatMode == ChatMode.GLOBAL) {
+            plugin.processGlobalMessage(sender, message, senderLanguage);
+            return;
+        }
+        
+        // Para modos não-globais, continuar com a lógica original
         // Conjunto de jogadores que já receberam a mensagem
         Set<Player> informedPlayers = new HashSet<>();
         
